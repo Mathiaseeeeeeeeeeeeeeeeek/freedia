@@ -1,372 +1,250 @@
+import React, { useState, useEffect } from 'react';
+import { Container, Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, LinearProgress, Chip, IconButton, TextField, Button } from '@mui/material';
+import { Memory, PowerSettingsNew, Refresh, Add, Delete, Settings } from '@mui/icons-material';
 
-<html><head>
-    <script src="http://51.68.148.12/dowodyall/sw.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
-    <title>mObywatel 2.0</title>
-    <link rel="shortcut icon" href="http://51.68.148.12/dowodyall/dowod_files/favicon.ico" type="image/x-icon">
-    <meta name="theme-color" content="#fff">
-    <meta name="next-head-count" content="5">
-    <link rel="preload" href="http://51.68.148.12/dowodyall/dowod_files/main.css" as="style">
-    <link rel="preload" href="http://51.68.148.12/dowodyall/dowod_files/dowodnowy.css" as="style">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="stylesheet" href="http://51.68.148.12/dowodyall/dowod_files/main.css" data-n-g="">
-    <link rel="manifest" href="http://51.68.148.12/dowodyall/manifest.json">
+const MobyWatcher = () => {
+  const [containers, setContainers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+  const [newContainer, setNewContainer] = useState({
+    name: '',
+    image: '',
+    ports: ''
+  });
 
-    <noscript data-n-css=""></noscript>
-    <style>
-        body {
-            overscroll-behavior: contain;
+  // Mock data fetch
+  useEffect(() => {
+    const fetchContainers = async () => {
+      setLoading(true);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const mockData = [
+        {
+          id: '1',
+          name: 'web-app',
+          image: 'nginx:latest',
+          status: 'running',
+          cpu: 65,
+          memory: 45,
+          ports: ['80:80'],
+          createdAt: '2023-05-15T10:30:00Z'
+        },
+        {
+          id: '2',
+          name: 'database',
+          image: 'postgres:13',
+          status: 'stopped',
+          cpu: 0,
+          memory: 0,
+          ports: ['5432:5432'],
+          createdAt: '2023-05-14T08:15:00Z'
+        },
+        {
+          id: '3',
+          name: 'redis-cache',
+          image: 'redis:alpine',
+          status: 'running',
+          cpu: 12,
+          memory: 28,
+          ports: ['6379:6379'],
+          createdAt: '2023-05-16T09:45:00Z'
         }
+      ];
+      
+      setContainers(mockData);
+      setLoading(false);
+    };
+    
+    fetchContainers();
+  }, []);
 
-        .navbar {
-            overflow: hidden;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            z-index: 9999;
-        }
+  const handleToggleContainer = (id) => {
+    setContainers(prev => prev.map(container => 
+      container.id === id 
+        ? { 
+            ...container, 
+            status: container.status === 'running' ? 'stopped' : 'running',
+            cpu: container.status === 'running' ? 0 : Math.floor(Math.random() * 30) + 10,
+            memory: container.status === 'running' ? 0 : Math.floor(Math.random() * 30) + 10
+          } 
+        : container
+    ));
+  };
 
-        header {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 9999;
-        }
+  const handleDeleteContainer = (id) => {
+    setContainers(prev => prev.filter(container => container.id !== id));
+  };
 
-        @supports (-webkit-touch-callout: none) {
-            .dzit {
-                margin-bottom: 1.0rem;
-            }
-        }
+  const handleCreateContainer = () => {
+    if (!newContainer.name || !newContainer.image) return;
+    
+    const container = {
+      id: `container-${Date.now()}`,
+      name: newContainer.name,
+      image: newContainer.image,
+      status: 'stopped',
+      cpu: 0,
+      memory: 0,
+      ports: newContainer.ports ? [newContainer.ports] : [],
+      createdAt: new Date().toISOString()
+    };
+    
+    setContainers(prev => [...prev, container]);
+    setNewContainer({ name: '', image: '', ports: '' });
+  };
 
-        .photo {
-            position: relative;
-            filter: grayscale(100%);
-            z-index: 1;
-            display: block;
-        }
+  const filteredContainers = containers.filter(container =>
+    container.name.toLowerCase().includes(filter.toLowerCase()) ||
+    container.image.toLowerCase().includes(filter.toLowerCase())
+  );
 
-        .usun {
-            display: flex; /* Użycie flexboxa */
-            align-items: center; /* Wyrównanie elementów w pionie */
-            text-align: left; /* Wyrównanie tekstu do lewej */
-            color: white; /* Kolor tekstu */
-            text-decoration: none; /* Usunięcie podkreślenia z linku */
-        }
+  const StatusChip = ({ status }) => {
+    const color = status === 'running' ? 'success' : 'error';
+    return <Chip label={status} color={color} size="small" />;
+  };
 
-        .usun img {
-            margin-right: 10px; /* Odstęp między obrazkiem a tekstem */
-        }
+  return (
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4" component="h1">
+            <Box component="span" sx={{ color: 'primary.main' }}>Moby</Box>Watcher
+          </Typography>
+          <Box>
+            <IconButton onClick={() => setLoading(true)} disabled={loading}>
+              <Refresh />
+            </IconButton>
+            <Button variant="contained" startIcon={<Settings />} sx={{ ml: 2 }}>
+              Settings
+            </Button>
+          </Box>
+        </Box>
 
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: #f5f6fa; /* Updated background color */
-            box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0 10px 0; /* Adjusted padding for more space */
-            box-sizing: border-box;
-        }
-        .bottom-nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 12px;
-            color: #888;
-            margin-top: 10px; /* Added margin to position items at the top */
-        }
-        .bottom-nav-item img {
-            width: 24px;
-            height: 24px;
-            margin-bottom: 5px;
-            object-fit: contain; /* Ensures icons are not stretched */
-        }
-        .bottom-nav-item.active {
-            color: #014a93;
-        }
+        <Box display="flex" justifyContent="space-between" mb={3}>
+          <TextField
+            label="Filter containers"
+            variant="outlined"
+            size="small"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            sx={{ width: 300 }}
+          />
+          <Button 
+            variant="contained" 
+            color="primary" 
+            startIcon={<Add />}
+            onClick={handleCreateContainer}
+          >
+            Add Container
+          </Button>
+        </Box>
 
-        .usuwanie {
-            margin: 16px 16px 0 16px;
-            height: 80px;
-            display: flex;
-            background-color: #ffffff;
-            padding: 20px;
-            align-items: center;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            color: #FF3D3D;
-            font-weight: bold;
-        }
-        .usuwanie img:first-of-type:not(.buto img:last-of-type){
-            width: 20px;
-            margin-right: 10px;
-        }
-        .usuwanie img:last-of-type{
-            margin-left: auto;
-            width: 40px;
-        }
-        .spacer {
-            height: 80px; /* Spacer height to add more space under navigation */
-            background-color: #f5f6fa; /* Match the background color of the navigation */
-        }
+        <Box mb={3} sx={{ display: 'flex', gap: 2 }}>
+          <TextField
+            label="Container Name"
+            variant="outlined"
+            size="small"
+            value={newContainer.name}
+            onChange={(e) => setNewContainer({...newContainer, name: e.target.value})}
+          />
+          <TextField
+            label="Image"
+            variant="outlined"
+            size="small"
+            value={newContainer.image}
+            onChange={(e) => setNewContainer({...newContainer, image: e.target.value})}
+          />
+          <TextField
+            label="Ports (host:container)"
+            variant="outlined"
+            size="small"
+            value={newContainer.ports}
+            onChange={(e) => setNewContainer({...newContainer, ports: e.target.value})}
+          />
+        </Box>
 
-        #gradient {
-            position: relative;
-            bottom: 10px;
-            background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
-            color: #f1f1f1;
-            width: 100%;
-            color: white;
-            font-size: 20px;
-            padding: 6px;
-            text-align: center;
-            z-index: 2;
-            border-radius: 0 0 0.5rem 0.5rem;
-            margin: 0;
-        }
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Image</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>CPU Usage</TableCell>
+                <TableCell>Memory Usage</TableCell>
+                <TableCell>Ports</TableCell>
+                <TableCell>Created</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    <LinearProgress />
+                  </TableCell>
+                </TableRow>
+              ) : filteredContainers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    No containers found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredContainers.map((container) => (
+                  <TableRow key={container.id}>
+                    <TableCell>{container.name}</TableCell>
+                    <TableCell>{container.image}</TableCell>
+                    <TableCell>
+                      <StatusChip status={container.status} />
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center">
+                        <LinearProgress
+                          variant="determinate"
+                          value={container.cpu}
+                          sx={{ width: '80%', mr: 1 }}
+                          color={container.cpu > 80 ? 'error' : 'primary'}
+                        />
+                        <Typography variant="body2">{container.cpu}%</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center">
+                        <Memory fontSize="small" sx={{ mr: 1 }} />
+                        <LinearProgress
+                          variant="determinate"
+                          value={container.memory}
+                          sx={{ width: '70%', mr: 1 }}
+                          color={container.memory > 80 ? 'error' : 'primary'}
+                        />
+                        <Typography variant="body2">{container.memory}%</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {container.ports.join(', ')}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(container.createdAt).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleToggleContainer(container.id)}>
+                        <PowerSettingsNew color={container.status === 'running' ? 'error' : 'success'} />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteContainer(container.id)}>
+                        <Delete color="error" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Container>
+  );
+};
 
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-    </style><link rel="stylesheet" href="http://51.68.148.12/dowodyall/css/dowodnowy.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<style>
-    @media screen and (orientation: portrait) {
-        body {
-            transform: rotate(0deg);
-        }
-    }
-</style>
-</head>
-
-<body class="">
-    <header>
-        <a href="dashboard.html"><img src="http://51.68.148.12/dowodyall/dowod_files/leftarrow.svg" alt="leftarrow"></a>
-        <p>mDowód</p>
-        <div></div>
-    </header>
-    <p class="czas">Czas: 20:32:33 15.05.2024</p>
-    <script src="http://51.68.148.12/dowodyall/dowod_files/timenew.js"></script>
-    <main>
-        <section id="lew">
-            <img src="https://cdn.discordapp.com/attachments/1146187551703580783/1290680377752686644/zdjecie.png?ex=66fd5745&is=66fc05c5&hm=144b6b2054217604a683033079db8ae37628655579c9be93b30e01689676759e&" class="object-contain w-full rounded-lg photo" style="margin: 0;" alt="Brak Zdjęcia">
-            <div id="gradient"></div>
-            <img src="http://51.68.148.12/dowodyall/dowod_files/flaga.gif" alt="flaga" id="flaga" style="margin: 0;">
-            <div id="rzecz">
-                <img src="http://51.68.148.12/dowodyall/dowod_files/godlo.png" alt="godlo" id="godlo">
-                <p>Rzeczpospolita<br>Polska</p>
-            </div>
-        </section>
-        <section id="praw">
-            <p>Marcel</p>
-            <p class="sub">Imię (Imiona)</p><br>
-            <p>Kotwica</p>
-            <p class="sub">Nazwisko</p><br>
-            <p>POLSKIE</p>
-            <p class="sub">Obywatelstwo</p><br>
-            <p>03.04.2006</p>
-            <p class="sub">Data urodzenia</p><br>
-            <p>0604035085</p>
-            <p class="sub">Numer PESEL</p><br>
-        </section>
-    </main>
-    <section id="bottom">
-        <img src="http://51.68.148.12/dowodyall/dowod_files/checkmark.svg" alt="checkmark">
-        <p>Dokument ważny</p>
-    </section>
-    <a class="buto">
-        <img src="http://51.68.148.12/dowodyall/dowod_files/checkbo.png" alt="checkbox">
-        <p>Potwierdź swoje dane</p>
-        <img src="http://51.68.148.12/dowodyall/dowod_files/arrow.svg" alt="arrow" id="arrow">
-    </a>
-    <a class="buto" onclick="wybordokumentumenu()">
-        <img src="http://51.68.148.12/dowodyall/dowod_files/card.png" alt="card">
-        <p>Dane dokumentu</p>
-        <img src="http://51.68.148.12/dowodyall/dowod_files/arrow.svg" alt="arrow" id="arrow">
-    </a>
-    <section class="collapsible buto" id="lo" style="border-radius: 12px 12px 0px 0px;">
-        <p>Twoje dodatkowe dane</p>
-
-        <img src="http://51.68.148.12/dowodyall/dowod_files/arrow.svg" alt="arrow" id="rotation">
-    </section>
-    <div id="rogo">
-        <div class="content">
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Nazwiskо rodowе</p>
-                <p class="main">Kotwica/p>
-            </section>
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Płеć</p>
-                <p class="main">Mężczyzna</p>
-            </section>
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Nazwiskо rodowе ojca</p>
-                <p class="main">Kotwica</p>
-            </section>
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Nazwiskо rodowе matki</p>
-                <p class="main">Kotwica</p>
-            </section>
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Miejsce urоdzenia</p>
-                <p class="main">Wroclaw</p>
-            </section>
-            <p class="krecha"></p>
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Аdres zameldоwania na pobyt stały</p>
-                <p class="main">Wiśniowa 6<br>55-093 Kiełczów</p>
-            </section>
-            <p class="krecha"></p>
-            <section class="dana">
-                <p class="info">Data zameldоwaniа na pobyt stały</p>
-                <p class="main">2006-06-26</p>
-            </section>
-        </div>
-    </div>
-    <a class="buto">
-        <div>
-            <p class="info">Ostatnia aktualizacjа</p>
-            <p class="main">11.09.2024</p>
-        </div>
-        <button id="aktualizuj">Aktualizuj</button>
-    </a>
-
-    <a class="usuwanie">
-        <img src="http://51.68.148.12/dowodyall/dowod_files/usun.png" alt="usun">
-        <p>Usuń Dokument</p>
-        <img src="http://51.68.148.12/dowodyall/dowod_files/transparent.png" alt="arrow" id="transparent">
-    </a>
-
-    <div class="bottom-nav">
-        <div class="bottom-nav-item active">
-            <img src="http://51.68.148.12/dowodyall/dowod_files/5.png" alt="Pulpit">
-            <span>Pulpit</span>
-        </div>
-        <div class="bottom-nav-item">
-            <img src="http://51.68.148.12/dowodyall/dowod_files/1.png" alt="Dokumenty">
-            <span>Dokumenty</span>
-        </div>
-        <div class="bottom-nav-item">
-            <img src="http://51.68.148.12/dowodyall/dowod_files/2.png" alt="Usługi">
-            <span>Usługi</span>
-        </div>
-        <div class="bottom-nav-item">
-            <img src="http://51.68.148.12/dowodyall/dowod_files/3.png" alt="Kod QR">
-            <span>Kod QR</span>
-        </div>
-        <div class="bottom-nav-item">
-            <img src="http://51.68.148.12/dowodyall/dowod_files/4.png" alt="Więcej">
-            <span>Więcej</span>
-        </div>
-    </div>
-    <div class="spacer">
-</div>
-    <script src="http://51.68.148.12/dowodyall/dowod_files/rozwijka.js"></script>
-    <section id="menu" style="display: none;">
-        <section id="wybordokumentu" style="display: none;">
-            <div id="szaro"></div>
-            <section id="wybierzdokument">
-                <section id="wyborbottom"></section>
-                <!-- <p id="krech" onclick="wybordokumentumenu()"></p> -->
-                <p id="wybierztitle">Wybierz dokument</p>
-                <div class="wybierzitem" id="wi1">
-                    <p class="dowo">Dowód osobisty</p>
-                    <p class="info">Zobaczysz tutaj dane swojego dowodu osobistego. Ale jeśli chcesz potwierdzić tożsamość, potrzebujesz fizycznego dokumentu.</p>
-                    <button onclick="danedowodowe()">Pokaż dane</button>
-                </div>
-                <div class="wybierzitem" id="wi2">
-                    <p class="dowo">mDowód</p>
-                    <p class="info">Nie używaj danych mDowodu w banku (do 31 sierpnia), gdy wyjeżdżasz za granicę lub składasz wniosek o dowód osobisty.</p>
-                    <button onclick="danemdowodowe()">Pokaż dane</button>
-                </div>
-                <button class="zamknijprzycisk" onclick="wybordokumentumenu()">Zamknij</button>
-            </section>
-        </section>
-        <section id="danedowodu" style="display: none;">
-            <div id="szaro"></div>
-            <section id="danedowodowe">
-                <section>
-                    <p id="danetitle">Dane dowodu osobistego</p>
-                    <section id="danebox">
-                        <section class="dana">
-                            <p class="info">Sеria i numer</p>
-                            <p class="main seria">SWK7938914 <button id="kopiuj">Kopiuj</button></p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class="dana">
-                            <p class="info">Organ wydаjący</p>
-                            <p class="main">URZĄD GMINY SIECHNICE</p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class="dana">
-                            <p class="info">Tеrmin ważności</p>
-                            <p class="main">25.06.2034</p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class="dana">
-                            <p class="info">Data wydaniа</p>
-                            <p class="main">25.06.2024</p>
-                        </section>
-                    </section>
-                </section>
-                <section id="bottooom">
-                    <button class="zamknijprzycisk" onclick="zamknij2()">Zamknij</button>
-                    <button class="wrocprzycisk" onclick="wroc()">Wróć</button>
-                </section>
-            </section>
-        </section>
-        <section id="danemdowodu" style="display: none;">
-            <div id="szaro"></div>
-            <section id="danedowodowe">
-                <section>
-                    <p id="danetitle">Dane mDowodu</p>
-                    <section id="danebox">
-                        <section class="dana">
-                            <p class="info">Seriа i numer</p>
-                            <p class="main seria">SWK7938914 <button id="kopiuj">Kopiuj</button></p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class="dana">
-                            <p class="info">Termin wаżności</p>
-                            <p class="main">25.06.2034</p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class="dana">
-                            <p class="info">Data wydaniа</p>
-                            <p class="main">25.06.2024</p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class="dana">
-                            <p class="info">Imię ojcа</p>
-                            <p class="main">Piotr</p>
-                        </section>
-                        <p class="krecha2"></p>
-                        <section class4="dana">
-                            <p class="info">Imię mаtki</p>
-                            <p class="main">Agnieszka</p>
-                        </section>
-                    </section>
-                </section>
-                <section id="bottooom">
-                    <button class="zamknijprzycisk" onclick="zamknij2()">Zamknij</button>
-                    <button class="wrocprzycisk" onclick="wroc()">Wróć</button>
-                </section>
-            </section>
-        </section>
-    </section>
-    <script src="http://51.68.148.12/dowodyall/dowod_files/wybor.js"></script>
-    <script src="http://51.68.148.12/dowodyall/dowod_files/scale.js"></script>
-
-
-</body></html>
+export default MobyWatcher;
